@@ -1,9 +1,9 @@
 <template>
-  <router-view />
+  Search.vue
 </template>
 
 <script>
 export default {
-  name: 'App',
+  name: "Search",
 }
 </script>

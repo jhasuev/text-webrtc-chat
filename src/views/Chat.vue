@@ -1,9 +1,9 @@
 <template>
-  <router-view />
+  Chat.vue
 </template>
 
 <script>
 export default {
-  name: 'App',
+  name: "Chat",
 }
 </script>

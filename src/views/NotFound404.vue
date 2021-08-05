@@ -1,9 +1,9 @@
 <template>
-  <router-view />
+  404.vue
 </template>
 
 <script>
 export default {
-  name: 'App',
+  name: "NotFound404",
 }
 </script>
