@@ -1,5 +1,7 @@
 <template>
-  Home.vue
+  <div class="text-center">
+    <button class="btn btn-primary">Найти собеседника</button>
+  </div>
 </template>
 
 <script>
