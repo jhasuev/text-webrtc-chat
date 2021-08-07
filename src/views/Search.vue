@@ -9,7 +9,23 @@
 </template>
 
 <script>
+import socket from "@/socket/"
+import ACTIONS from "@/socket/actions"
+
 export default {
   name: "Search",
+  data() {
+    return {
+      socket,
+      ACTIONS,
+    }
+  },
+  mounted() {
+    socket.emit(ACTIONS.START_SEARCHING)
+
+    socket.on(ACTIONS.START_DISCUSSION, () => {
+      this.$router.push({ name: "chat" })
+    })
+  },
 }
 </script>

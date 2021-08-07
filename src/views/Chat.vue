@@ -2,7 +2,7 @@
   <div class="chat">
     <div class="d-flex justify-content-between mb-2">
       <span>Диалог с собеседником</span>
-      <button type="button" class="btn-close ms-3" aria-label="Close" title="Завершить диалог"></button>
+      <button class="btn-close ms-3" aria-label="Close" title="Завершить диалог" @click="leave"></button>
     </div>
 
     <messages class="chat__messages" />
@@ -14,11 +14,32 @@
 <script>
 import Messages from "@/components/Messages"
 import ChatFooter from "@/components/ChatFooter"
+
+import socket from "@/socket/"
+import ACTIONS from "@/socket/actions"
+
 export default {
   name: "Chat",
   components: {
     Messages,
     ChatFooter,
+  },
+  data() {
+    return {
+      socket,
+      ACTIONS,
+    }
+  },
+  mounted() {
+    socket.on(ACTIONS.STOP_DISCUSSION, () => {
+      this.$router.push({ name: "home" })
+    })
+  },
+  methods: {
+    leave() {
+      socket.emit(ACTIONS.STOP_DISCUSSION)
+      this.$router.push({ name: "home" })
+    },
   },
 }
 </script>
