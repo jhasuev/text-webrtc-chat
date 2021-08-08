@@ -4,7 +4,7 @@
     <div class="mb-4">
       <div class="spinner-border text-secondary" role="status"></div>
     </div>
-    <button class="btn btn-primary">Остановить поиск</button>
+    <button class="btn btn-primary" @click="stop">Остановить поиск</button>
   </div>
 </template>
 
@@ -26,6 +26,15 @@ export default {
     socket.on(ACTIONS.START_DISCUSSION, () => {
       this.$router.push({ name: "chat" })
     })
+
+    socket.on(ACTIONS.STOP_SEARCHING, () => {
+      this.$router.push({ name: "home" })
+    })
+  },
+  methods: {
+    stop() {
+      socket.emit(ACTIONS.STOP_SEARCHING)
+    },
   },
 }
 </script>

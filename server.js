@@ -13,10 +13,12 @@ io.on("connection", socket => {
     if (freeCompanionIndex >= 0) {
       const talkers = Talkers.addCompanion({ freeCompanionIndex, newSocketId: socket.id })
 
-      // начинем общение
-      talkers.forEach(talker => {
-        io.to(talker.socket).emit(ACTIONS.START_DISCUSSION)
-      })
+      if (talkers) {
+        // начинем общение
+        talkers.forEach(talker => {
+          io.to(talker.socket).emit(ACTIONS.START_DISCUSSION)
+        })
+      }
     } else {
       // добавляем пользователя в ожидании...
       Talkers.addWaiter(socket.id)
@@ -38,6 +40,15 @@ io.on("connection", socket => {
   }
   socket.on("disconnecting", onLeave)
   socket.on(ACTIONS.STOP_DISCUSSION, onLeave)
+
+
+  socket.on(ACTIONS.STOP_SEARCHING, () => {
+    Talkers.removeWaiter(socket.id)
+    socket.emit(ACTIONS.STOP_SEARCHING)
+
+    console.log("stopping...")
+    console.log(Talkers.getTalkers())
+  })
 })
 
 server.listen(PORT, () => {
