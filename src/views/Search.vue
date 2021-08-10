@@ -11,6 +11,7 @@
 <script>
 import socket from "@/socket/"
 import ACTIONS from "@/socket/actions"
+import { mapActions } from "vuex"
 
 export default {
   name: "Search",
@@ -23,7 +24,11 @@ export default {
   mounted() {
     socket.emit(ACTIONS.START_SEARCHING)
 
-    socket.on(ACTIONS.START_DISCUSSION, () => {
+    socket.on(ACTIONS.START_DISCUSSION, data => {
+      // тут будет хранится данные о текущем пользователя (не собеседник) { socket, mustCreateOffer }
+      this.setSelfInfo(data)
+      console.log("Search.vue >> START_DISCUSSION >> data", data);
+
       this.$router.push({ name: "chat" })
     })
 
@@ -32,6 +37,8 @@ export default {
     })
   },
   methods: {
+    ...mapActions([ 'setSelfInfo' ]),
+
     stop() {
       socket.emit(ACTIONS.STOP_SEARCHING)
     },

@@ -16,7 +16,7 @@ io.on("connection", socket => {
       if (talkers) {
         // начинем общение
         talkers.forEach(talker => {
-          io.to(talker.socket).emit(ACTIONS.START_DISCUSSION)
+          io.to(talker.socket).emit(ACTIONS.START_DISCUSSION, talker)
         })
       }
     } else {
@@ -25,6 +25,21 @@ io.on("connection", socket => {
     }
 
     console.log("START_SEARCHING", Talkers.getTalkers())
+  })
+
+  // обмен ключами
+  socket.on(ACTIONS.RELAY_SDP, sdp => {
+    if (!sdp) return null
+    
+    console.log("ACTIONS.RELAY_SDP > sdp >", sdp);
+    // найти собеседника
+    const companion = Talkers.getCompanionBySocket(socket.id)
+    
+    // передать ему ключ
+    if (companion) {
+      console.log(companion.socket);
+      io.to(companion.socket).emit(ACTIONS.RELAY_SDP, sdp)
+    }
   })
 
   const onLeave = () => {

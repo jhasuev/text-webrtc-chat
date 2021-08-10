@@ -18,6 +18,10 @@ import ChatFooter from "@/components/ChatFooter"
 import socket from "@/socket/"
 import ACTIONS from "@/socket/actions"
 
+import WebRTC  from "@/WebRTC"
+
+import { mapGetters } from "vuex";
+
 export default {
   name: "Chat",
   components: {
@@ -28,17 +32,62 @@ export default {
     return {
       socket,
       ACTIONS,
+      WebRTC,
     }
+  },
+  computed: {
+    ...mapGetters([ 'getSocket', 'mustCreateOffer' ]),
   },
   mounted() {
     socket.on(ACTIONS.STOP_DISCUSSION, () => {
       this.$router.push({ name: "home" })
     })
+
+    this.sharingCandidates()
   },
   methods: {
     leave() {
       socket.emit(ACTIONS.STOP_DISCUSSION)
       this.$router.push({ name: "home" })
+    },
+
+    async sharingCandidates() {
+      if (this.getSocket) {
+        this.WebRTC = new WebRTC()
+        if (this.mustCreateOffer) {
+          // создание оффера
+          const offer = await this.WebRTC.createOffer()
+
+          // отправки оффера
+          socket.emit(ACTIONS.RELAY_SDP, offer)
+
+          // ожидания ответа
+          socket.on(ACTIONS.RELAY_SDP, answer => {
+            console.log("RELAY_SDP > answer > ", answer);
+            // установки ответа
+            this.WebRTC.setAnswer(answer)
+            // ожидания установки соединения
+          })
+        } else {
+          // ожидания оффера
+          socket.on(ACTIONS.RELAY_SDP, async offer => {
+            console.log("RELAY_SDP > offer > ", offer);
+
+            // установки оффера
+            this.WebRTC.setOffer(offer)
+
+            // создания ответа
+            const answer = await this.WebRTC.createAnswer()
+
+            // отправки ответа
+            socket.emit(ACTIONS.RELAY_SDP, answer)
+            // ожидания установки соединения
+          })
+        }
+      }
+
+      console.log(this.mustCreateOffer, this.getSocket);
+
     },
   },
 }
