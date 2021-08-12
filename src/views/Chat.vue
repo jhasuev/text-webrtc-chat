@@ -39,6 +39,8 @@ export default {
     ...mapGetters([ 'getSocket', 'mustCreateOffer' ]),
   },
   mounted() {
+    if (!this.getSocket) return this.$router.push({ name: "home" })
+
     socket.on(ACTIONS.STOP_DISCUSSION, () => {
       this.$router.push({ name: "home" })
     })
@@ -58,26 +60,31 @@ export default {
           // создание оффера
           const offer = await this.WebRTC.createOffer()
 
+          console.log("MY OFFER >> ", offer);
+
           // отправки оффера
           socket.emit(ACTIONS.RELAY_SDP, offer)
 
           // ожидания ответа
-          socket.on(ACTIONS.RELAY_SDP, answer => {
-            console.log("RELAY_SDP > answer > ", answer);
+          socket.on(ACTIONS.RELAY_SDP, async answer => {
+            if(answer.type != 'answer') return null
+            console.log("ANSWER FROM COMPANION >> ", answer);
             // установки ответа
-            this.WebRTC.setAnswer(answer)
+            await this.WebRTC.setRemoteSdp(answer)
             // ожидания установки соединения
           })
         } else {
           // ожидания оффера
           socket.on(ACTIONS.RELAY_SDP, async offer => {
-            console.log("RELAY_SDP > offer > ", offer);
+            if(offer.type != 'offer') return null
+            console.log("OFFER FROM COMPANION >>> ", offer);
 
             // установки оффера
-            this.WebRTC.setOffer(offer)
+            await this.WebRTC.setRemoteSdp(offer)
 
             // создания ответа
             const answer = await this.WebRTC.createAnswer()
+            console.log("MY ANSWER >> ", answer);
 
             // отправки ответа
             socket.emit(ACTIONS.RELAY_SDP, answer)
@@ -86,6 +93,8 @@ export default {
         }
       }
 
+
+      // this.WebRTC.sendMessage(1234567)
       console.log(this.mustCreateOffer, this.getSocket);
 
     },

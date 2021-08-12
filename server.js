@@ -30,14 +30,14 @@ io.on("connection", socket => {
   // обмен ключами
   socket.on(ACTIONS.RELAY_SDP, sdp => {
     if (!sdp) return null
-    
-    console.log("ACTIONS.RELAY_SDP > sdp >", sdp);
+
+    // console.log("ACTIONS.RELAY_SDP > sdp >", sdp);
     // найти собеседника
     const companion = Talkers.getCompanionBySocket(socket.id)
     
     // передать ему ключ
     if (companion) {
-      console.log(companion.socket);
+      console.log(sdp.type, " from ", socket.id, " to: ", companion.socket);
       io.to(companion.socket).emit(ACTIONS.RELAY_SDP, sdp)
     }
   })
