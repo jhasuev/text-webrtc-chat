@@ -3,14 +3,28 @@ import freeice from "freeice"
 class WebRTC {
   constructor() {
     this.peerConnection = new RTCPeerConnection({ iceServers: freeice() })
-    this.peerConnection.onicecandidate = () => console.log('icecandidate: ' + JSON.stringify(this.peerConnection.localDescription))
+    this.peerConnection.onicecandidate = (e) => {
+      if (e.candidate) {
+        this.icecandidate = e.candidate
+      }
+    }
+  }
+  
+  getIceCandidate() {
+    return new Promise(resolve => {
+      const interval = setInterval(() => {
+        if (this.icecandidate) {
+          clearInterval(interval)
+          resolve(this.icecandidate)
+        }
+      }, 100);
+    })
   }
 
   async createOffer() {
     this.dataChannel = this.peerConnection.createDataChannel("chat")
     this.dataChannel.onopen = () => alert("Channel opened!")
     this.dataChannel.onmessage = e => console.log(`Message: ${e.data}`)
-
 
     const offer = await this.peerConnection.createOffer()
     this.peerConnection.setLocalDescription(offer)

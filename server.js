@@ -42,6 +42,20 @@ io.on("connection", socket => {
     }
   })
 
+  // обмен ice-кандидатами
+  socket.on(ACTIONS.RELAY_ICE, ice => {
+    // console.log(11111111111);
+    // console.log(ice);
+    if (!ice) return null
+
+    const companion = Talkers.getCompanionBySocket(socket.id)
+    
+    if (companion) {
+      console.log(" ice", ice, " from ", socket.id, " to: ", companion.socket);
+      io.to(companion.socket).emit(ACTIONS.RELAY_ICE, ice)
+    }
+  })
+
   const onLeave = () => {
     const companion = Talkers.leave(socket.id)
     

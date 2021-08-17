@@ -53,6 +53,19 @@ export default {
       this.$router.push({ name: "home" })
     },
 
+    async setIceCandidate() {
+      // отправка ice-кандидата
+      const icecandidate = await this.WebRTC.getIceCandidate()
+      console.log("my ice", icecandidate);
+      socket.emit(ACTIONS.RELAY_ICE, icecandidate)
+
+      // отправка ice-кандидата
+      socket.on(ACTIONS.RELAY_ICE, async ice => {
+        await this.WebRTC.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
+        console.log("companion's ice candidate", ice);
+      })
+    },
+
     async sharingCandidates() {
       if (this.getSocket) {
         this.WebRTC = new WebRTC()
@@ -71,6 +84,8 @@ export default {
             console.log("ANSWER FROM COMPANION >> ", answer);
             // установки ответа
             await this.WebRTC.setRemoteSdp(answer)
+
+            this.setIceCandidate()
             // ожидания установки соединения
           })
         } else {
@@ -88,6 +103,8 @@ export default {
 
             // отправки ответа
             socket.emit(ACTIONS.RELAY_SDP, answer)
+
+            this.setIceCandidate()
             // ожидания установки соединения
           })
         }
@@ -95,7 +112,7 @@ export default {
 
 
       // this.WebRTC.sendMessage(1234567)
-      console.log(this.mustCreateOffer, this.getSocket);
+      // console.log(this.mustCreateOffer, this.getSocket);
 
     },
   },
