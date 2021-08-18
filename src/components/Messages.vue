@@ -1,8 +1,13 @@
 <template>
   <div class="messages">
-    <message class="messages__item" text="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" :time="Date.now()" />
-    <message class="messages__item" text="Привет!!! Как дела?" :myself="true" :time="Date.now()" v-for="n in 20" :key="n" />
-    <message class="messages__item" text="Нормально! Сам как ?" :time="Date.now()" />
+    <message
+      v-for="message, i in messages"
+      :key="i"
+      class="messages__item"
+      :text=message.text
+      :myself=message.myself
+      :time=message.time
+    />
   </div>
 </template>
 
@@ -12,6 +17,9 @@ export default {
   name: "Messages",
   components: {
     Message,
+  },
+  props: {
+    messages: { type: Array, default: () => [] },
   },
 }
 </script>

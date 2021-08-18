@@ -6,9 +6,15 @@
       <button class="btn-close ms-3" aria-label="Close" title="Завершить диалог" @click="leave"></button>
     </div>
 
-    <messages class="chat__messages" />
+    <messages
+      class="chat__messages"
+      :messages=messages
+    />
 
-    <chat-footer />
+    <chat-footer
+      v-if="isConnected"
+      @send-message=onSendMessage
+    />
   </div>
 </template>
 
@@ -32,6 +38,8 @@ export default {
     return {
       socket,
       ACTIONS,
+
+      messages: [],
 
       states: {
         "init": "Инициализируем соединение",
@@ -133,9 +141,19 @@ export default {
         setTimeout(() => {
           if (!this.isConnected) {
             this.currentState = "reconnecting"
+            this.close()
             this.start()
           }
         }, 5000);
+      }
+    },
+
+    close() {
+      if (this.peerConnection) {
+        this.peerConnection.close()
+        this.peerConnection.onicecandidate = null
+        this.peerConnection.setLocalDescription(null)
+        this.peerConnection.setRemoteDescription(null)
       }
     },
 
@@ -171,17 +189,27 @@ export default {
 
     initChannelEvents() {
       this.dataChannel.onopen = () => this.onOpen()
-      this.dataChannel.onmessage = e => this.onMessage(e)
+      this.dataChannel.onmessage = e => this.onReceiveMessage(e)
     },
 
     onOpen() {
       this.currentState = 'onopen'
-      this.dataChannel.send("MESSAGE FROM COMPANION!!")
+      this.dataChannel.send("Беседа началась!")
     },
 
-    onMessage(e) {
+    onReceiveMessage(e) {
       console.log(">>>>>>>> MESSAGE !!!!!!!!!!!!!!!!!!!!!", e)
+      this.messages.push({ text: e.data, time: Date.now(), myself: false})
     },
+
+    onSendMessage(message) {
+      this.dataChannel.send(message)
+      this.messages.push({ text: message, time: Date.now(), myself: true})
+    },
+  },
+
+  beforeUnmount() {
+    this.close()
   },
 }
 </script>

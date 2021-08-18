@@ -19,7 +19,6 @@ const store = createStore({
   },
   actions: {
     setSelfInfo({commit}, payload) {
-      console.log("setSelfInfo >> payload", payload);
       commit("SET_SELF_INFO", payload)
     },
   },
