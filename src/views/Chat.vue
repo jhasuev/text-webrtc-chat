@@ -152,8 +152,6 @@ export default {
       if (this.peerConnection) {
         this.peerConnection.close()
         this.peerConnection.onicecandidate = null
-        this.peerConnection.setLocalDescription(null)
-        this.peerConnection.setRemoteDescription(null)
       }
     },
 
@@ -198,7 +196,6 @@ export default {
     },
 
     onReceiveMessage(e) {
-      console.log(">>>>>>>> MESSAGE !!!!!!!!!!!!!!!!!!!!!", e)
       this.messages.push({ text: e.data, time: Date.now(), myself: false})
     },
 

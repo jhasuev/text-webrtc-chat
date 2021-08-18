@@ -7,6 +7,7 @@ const options = {
   transports: ["websocket"],
 }
 
-const socket = io("http://localhost:3001", options)
+const url = process.env.NODE_ENV === "development" ? "http://localhost:3001" : location.origin
+const socket = io(url, options)
 
 export default socket
