@@ -27,34 +27,20 @@ io.on("connection", socket => {
     console.log("START_SEARCHING", Talkers.getTalkers())
   })
 
-  // обмен ключами
-  socket.on(ACTIONS.RELAY_SDP, sdp => {
-    if (!sdp) return null
-
-    // console.log("ACTIONS.RELAY_SDP > sdp >", sdp);
-    // найти собеседника
-    const companion = Talkers.getCompanionBySocket(socket.id)
+  const sendItToCompanion = (action, data) => {
+    if (!data) return null
     
-    // передать ему ключ
+    const companion = Talkers.getCompanionBySocket(socket.id)
     if (companion) {
-      console.log(sdp.type, " from ", socket.id, " to: ", companion.socket);
-      io.to(companion.socket).emit(ACTIONS.RELAY_SDP, sdp)
+      io.to(companion.socket).emit(action, data)
     }
-  })
+  }
+
+  // обмен ключами
+  socket.on(ACTIONS.RELAY_SDP, data => sendItToCompanion(ACTIONS.RELAY_SDP, data))
 
   // обмен ice-кандидатами
-  socket.on(ACTIONS.RELAY_ICE, ice => {
-    // console.log(11111111111);
-    // console.log(ice);
-    if (!ice) return null
-
-    const companion = Talkers.getCompanionBySocket(socket.id)
-    
-    if (companion) {
-      console.log(" ice", ice, " from ", socket.id, " to: ", companion.socket);
-      io.to(companion.socket).emit(ACTIONS.RELAY_ICE, ice)
-    }
-  })
+  socket.on(ACTIONS.RELAY_ICE, data => sendItToCompanion(ACTIONS.RELAY_ICE, data))
 
   const onLeave = () => {
     const companion = Talkers.leave(socket.id)
