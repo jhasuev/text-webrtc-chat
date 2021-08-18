@@ -17,8 +17,7 @@ import ChatFooter from "@/components/ChatFooter"
 
 import socket from "@/socket/"
 import ACTIONS from "@/socket/actions"
-
-import WebRTC  from "@/WebRTC"
+import freeice from "freeice"
 
 import { mapGetters } from "vuex";
 
@@ -32,7 +31,6 @@ export default {
     return {
       socket,
       ACTIONS,
-      WebRTC,
     }
   },
   computed: {
@@ -45,7 +43,7 @@ export default {
       this.$router.push({ name: "home" })
     })
 
-    this.sharingCandidates()
+    this.start()
   },
   methods: {
     leave() {
@@ -53,67 +51,66 @@ export default {
       this.$router.push({ name: "home" })
     },
 
-    async setIceCandidate() {
-      // отправка ice-кандидата
-      const icecandidate = await this.WebRTC.getIceCandidate()
-      console.log("my ice", icecandidate);
-      socket.emit(ACTIONS.RELAY_ICE, icecandidate)
-
-      // отправка ice-кандидата
-      socket.on(ACTIONS.RELAY_ICE, async ice => {
-        await this.WebRTC.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
-        console.log("companion's ice candidate", ice);
-      })
-    },
-
-    async sharingCandidates() {
+    async start() {
       if (this.getSocket) {
-        this.WebRTC = new WebRTC()
+        let myIce = null
+        this.peerConnection = new RTCPeerConnection({ iceServers: freeice() })
+        this.peerConnection.onicecandidate = (e) => {
+          if (e.candidate && !myIce) {
+            myIce = e.candidate
+            console.log("e.candidate", e.candidate);
+            socket.emit(ACTIONS.RELAY_ICE, e.candidate)
+          }
+        }
+        
+        this.dataChannel = this.peerConnection.createDataChannel("chat")
+        this.dataChannel.onopen = () => alert("Channel opened!")
+        this.dataChannel.onmessage = e => console.log(`Message: ${e.data}`)
+
         if (this.mustCreateOffer) {
           // создание оффера
-          const offer = await this.WebRTC.createOffer()
+          const offer = await this.peerConnection.createOffer()
+          this.peerConnection.setLocalDescription(offer)
 
-          console.log("MY OFFER >> ", offer);
+          console.log(offer && "created offer");
 
           // отправки оффера
           socket.emit(ACTIONS.RELAY_SDP, offer)
 
           // ожидания ответа
           socket.on(ACTIONS.RELAY_SDP, async answer => {
-            if(answer.type != 'answer') return null
-            console.log("ANSWER FROM COMPANION >> ", answer);
+            console.log("получили ответ: ", answer);
             // установки ответа
-            await this.WebRTC.setRemoteSdp(answer)
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
 
-            this.setIceCandidate()
-            // ожидания установки соединения
+            socket.on(ACTIONS.RELAY_ICE, async ice => {
+              await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
+              console.log("companion's ice candidate", ice);
+            })
           })
         } else {
           // ожидания оффера
+          console.log("ожидания оффера");
           socket.on(ACTIONS.RELAY_SDP, async offer => {
-            if(offer.type != 'offer') return null
-            console.log("OFFER FROM COMPANION >>> ", offer);
+            console.log("получили оффер: ", offer);
 
             // установки оффера
-            await this.WebRTC.setRemoteSdp(offer)
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
 
             // создания ответа
-            const answer = await this.WebRTC.createAnswer()
-            console.log("MY ANSWER >> ", answer);
+            const answer = await this.peerConnection.createAnswer()
+            this.peerConnection.setLocalDescription(answer)
+            console.log(answer && "created answer");
 
             // отправки ответа
             socket.emit(ACTIONS.RELAY_SDP, answer)
 
-            this.setIceCandidate()
-            // ожидания установки соединения
+            socket.on(ACTIONS.RELAY_ICE, async ice => {
+              await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
+            })
           })
         }
       }
-
-
-      // this.WebRTC.sendMessage(1234567)
-      // console.log(this.mustCreateOffer, this.getSocket);
-
     },
   },
 }
