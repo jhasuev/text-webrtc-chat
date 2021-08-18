@@ -1,7 +1,8 @@
 <template>
   <div class="chat">
     <div class="d-flex justify-content-between mb-2">
-      <span>Диалог с собеседником</span>
+      <span v-if="isConnected">Диалог с собеседником</span>
+      <span v-else class="chat__console">{{ states[currentState] }}</span>
       <button class="btn-close ms-3" aria-label="Close" title="Завершить диалог" @click="leave"></button>
     </div>
 
@@ -31,10 +32,32 @@ export default {
     return {
       socket,
       ACTIONS,
+
+      states: {
+        "init": "Инициализируем соединение",
+        "offerCreating": "Создание оффера",
+        "offerSending": "Отправка оффера",
+        "answerGetting": "Получение ответа",
+        "iceGetting": "Получение ice кандидата",
+        "waitingForOffer": "Ожидания оффера",
+        "offerGetting": "Получение оффера",
+        "offerSetting": "Установка оффера",
+        "answerCreating": "Создание ответа",
+        "answerSending": "Отправка ответа",
+        "channelCreating": "Создание канала связи",
+        "ondatachannel": "Установка канала связи",
+        "reconnecting": "Еще одна попытка...",
+        "onopen": "Связь установлена",
+      },
+      currentState: '',
     }
   },
   computed: {
     ...mapGetters([ 'getSocket', 'mustCreateOffer' ]),
+
+    isConnected() {
+      return this.currentState === 'onopen'
+    },
   },
   mounted() {
     if (!this.getSocket) return this.$router.push({ name: "home" })
@@ -53,64 +76,111 @@ export default {
 
     async start() {
       if (this.getSocket) {
-        let myIce = null
-        this.peerConnection = new RTCPeerConnection({ iceServers: freeice() })
-        this.peerConnection.onicecandidate = (e) => {
-          if (e.candidate && !myIce) {
-            myIce = e.candidate
-            console.log("e.candidate", e.candidate);
-            socket.emit(ACTIONS.RELAY_ICE, e.candidate)
-          }
-        }
-        
-        this.dataChannel = this.peerConnection.createDataChannel("chat")
-        this.dataChannel.onopen = () => alert("Channel opened!")
-        this.dataChannel.onmessage = e => console.log(`Message: ${e.data}`)
+        this.initConnection()
 
         if (this.mustCreateOffer) {
+          this.createChannel()
+
           // создание оффера
+          this.currentState = 'offerCreating'
           const offer = await this.peerConnection.createOffer()
           this.peerConnection.setLocalDescription(offer)
 
-          console.log(offer && "created offer");
-
           // отправки оффера
+          this.currentState = 'offerSending'
           socket.emit(ACTIONS.RELAY_SDP, offer)
 
           // ожидания ответа
           socket.on(ACTIONS.RELAY_SDP, async answer => {
-            console.log("получили ответ: ", answer);
+            this.currentState = 'answerGetting'
             // установки ответа
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
 
             socket.on(ACTIONS.RELAY_ICE, async ice => {
+              this.currentState = 'iceGetting'
               await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
-              console.log("companion's ice candidate", ice);
             })
           })
         } else {
+          this.onDataChannel()
           // ожидания оффера
           console.log("ожидания оффера");
+          
+          this.currentState = 'waitingForOffer'
           socket.on(ACTIONS.RELAY_SDP, async offer => {
-            console.log("получили оффер: ", offer);
+            this.currentState = 'offerGetting'
 
             // установки оффера
+            this.currentState = 'offerSetting'
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
 
             // создания ответа
+            this.currentState = 'answerCreating'
             const answer = await this.peerConnection.createAnswer()
             this.peerConnection.setLocalDescription(answer)
-            console.log(answer && "created answer");
 
-            // отправки ответа
+            // отправка ответа
+            this.currentState = 'answerSending'
             socket.emit(ACTIONS.RELAY_SDP, answer)
 
             socket.on(ACTIONS.RELAY_ICE, async ice => {
+              this.currentState = 'iceGetting'
               await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
             })
           })
         }
+
+        setTimeout(() => {
+          if (!this.isConnected) {
+            this.currentState = "reconnecting"
+            this.start()
+          }
+        }, 5000);
       }
+    },
+
+    initConnection() {
+      this.currentState = 'init'
+      this.peerConnection = new RTCPeerConnection({ iceServers: freeice() })
+      this.onIceCandidate()
+    },
+
+    onIceCandidate() {
+      let candidate = null
+      this.peerConnection.onicecandidate = (e) => {
+        if (e.candidate && !candidate) {
+          candidate = e.candidate
+          socket.emit(ACTIONS.RELAY_ICE, candidate)
+        }
+      }
+    },
+
+    createChannel() {
+      this.currentState = 'channelCreating'
+      this.dataChannel = this.peerConnection.createDataChannel("chat")
+      this.initChannelEvents()
+    },
+
+    onDataChannel() {
+      this.peerConnection.ondatachannel = event => {
+        this.currentState = 'ondatachannel'
+        this.dataChannel = event.channel
+        this.initChannelEvents()
+      }
+    },
+
+    initChannelEvents() {
+      this.dataChannel.onopen = () => this.onOpen()
+      this.dataChannel.onmessage = e => this.onMessage(e)
+    },
+
+    onOpen() {
+      this.currentState = 'onopen'
+      this.dataChannel.send("MESSAGE FROM COMPANION!!")
+    },
+
+    onMessage(e) {
+      console.log(">>>>>>>> MESSAGE !!!!!!!!!!!!!!!!!!!!!", e)
     },
   },
 }
@@ -122,6 +192,10 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100%;
+
+  &__console {
+    color: #090;
+  }
 
   &__messages {
     flex-grow: 1;
