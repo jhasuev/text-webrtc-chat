@@ -64,6 +64,11 @@ io.on("connection", socket => {
     console.log("stopping...")
     console.log(Talkers.getTalkers())
   })
+
+  socket.on(ACTIONS.RELAY_TOTAL, () => {
+    const total = Talkers.getTalkers().reduce((acc, talkers) => acc + talkers.length, 0)
+    socket.emit(ACTIONS.RELAY_TOTAL, total)
+  })
 })
 
 server.listen(PORT, () => {
