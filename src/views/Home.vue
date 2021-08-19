@@ -1,9 +1,14 @@
 <template>
   <div class="text-center">
-    <div class="total mb-2">
+    <div v-if="canShowCompanionDisconnected" class="mb-4">
+      <h5 class="mb-1">Собеседник отсоединился</h5>
+      Попробуйте пообщаться с кем-то другим.
+    </div>
+    
+    <button class="btn btn-primary" @click="start">Найти собеседника</button>
+    <div class="total mt-2">
       Всего общаются: <b>{{ total }}</b>
     </div>
-    <button class="btn btn-primary" @click="start">Найти собеседника</button>
   </div>
 </template>
 
@@ -17,9 +22,9 @@ export default {
       total: 0,
     }
   },
-  methods: {
-    start() {
-      this.$router.push({ name: "search" })
+  computed: {
+    canShowCompanionDisconnected() {
+      return this.$route.query?.state === 'companion-disconnected'
     },
   },
   mounted(){
@@ -28,6 +33,11 @@ export default {
     })
 
     socket.emit(ACTIONS.RELAY_TOTAL)
+  },
+  methods: {
+    start() {
+      this.$router.push({ name: "search" })
+    },
   },
 }
 </script>

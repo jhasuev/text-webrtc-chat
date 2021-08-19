@@ -55,7 +55,7 @@ export default {
     if (!this.getSocket) return this.$router.push({ name: "home" })
 
     socket.on(ACTIONS.STOP_DISCUSSION, () => {
-      this.$router.push({ name: "home" })
+      this.$router.push({ name: "home", query: { state: 'companion-disconnected' } })
     })
 
     this.start()
@@ -139,16 +139,8 @@ export default {
     initConnection() {
       this.currentState = 'init'
       this.peerConnection = new RTCPeerConnection({ iceServers: freeice() })
-      this.setOnIceCandidate()
-    },
-
-    setOnIceCandidate() {
-      let candidate = null
       this.peerConnection.onicecandidate = (e) => {
-        if (e.candidate && !candidate) {
-          candidate = e.candidate
-          socket.emit(ACTIONS.RELAY_ICE, candidate)
-        }
+        socket.emit(ACTIONS.RELAY_ICE, e.candidate)
       }
     },
 
