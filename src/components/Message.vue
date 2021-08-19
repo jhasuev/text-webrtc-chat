@@ -1,5 +1,5 @@
 <template>
-  <div :class="['message', { myself }]">
+  <div :class="['message', { myself, notSent }]">
     <div class="message__text" v-text="text" />
     <time class="message__time">{{ moment(time).format("H:m:ss") }}</time>
   </div>
@@ -12,12 +12,18 @@ export default {
   props: {
     text: { type: String, default: "" },
     time: { type: Number, default: 0 },
+    sent: { type: Boolean, default: false },
     myself: { type: Boolean, default: false },
   },
   data(){
     return {
       moment,
     }
+  },
+  computed: {
+    notSent() {
+      return this.myself && !this.sent
+    },
   },
 }
 </script>
@@ -37,6 +43,9 @@ export default {
   &.myself {
     align-self: flex-end;
     background-color: #DCF8C6;
+  }
+  &.notSent {
+    opacity: .5;
   }
 
   &__text {

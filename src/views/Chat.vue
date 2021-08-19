@@ -25,6 +25,7 @@ import ChatFooter from "@/components/ChatFooter"
 import socket from "@/socket/"
 import ACTIONS from "@/socket/actions"
 import freeice from "freeice"
+import STATES from "@/assets/json/connecting-states"
 
 import { mapGetters } from "vuex";
 
@@ -38,25 +39,8 @@ export default {
     return {
       socket,
       ACTIONS,
-
       messages: [],
-
-      states: {
-        "init": "Инициализируем соединение",
-        "offerCreating": "Создание оффера",
-        "offerSending": "Отправка оффера",
-        "answerGetting": "Получение ответа",
-        "iceGetting": "Получение ice кандидата",
-        "waitingForOffer": "Ожидания оффера",
-        "offerGetting": "Получение оффера",
-        "offerSetting": "Установка оффера",
-        "answerCreating": "Создание ответа",
-        "answerSending": "Отправка ответа",
-        "channelCreating": "Создание канала связи",
-        "ondatachannel": "Установка канала связи",
-        "reconnecting": "Еще одна попытка...",
-        "onopen": "Связь установлена",
-      },
+      states: STATES,
       currentState: '',
     }
   },
@@ -83,69 +67,60 @@ export default {
     },
 
     async start() {
-      if (this.getSocket) {
-        this.initConnection()
+      this.initConnection()
 
-        if (this.mustCreateOffer) {
-          this.createChannel()
+      if (this.mustCreateOffer) {
+        this.createChannel()
 
-          // создание оффера
-          this.currentState = 'offerCreating'
-          const offer = await this.peerConnection.createOffer()
-          this.peerConnection.setLocalDescription(offer)
+        // создание оффера
+        this.currentState = 'offerCreating'
+        const offer = await this.peerConnection.createOffer()
+        this.peerConnection.setLocalDescription(offer)
 
-          // отправки оффера
-          this.currentState = 'offerSending'
-          socket.emit(ACTIONS.RELAY_SDP, offer)
+        // отправки оффера
+        this.currentState = 'offerSending'
+        socket.emit(ACTIONS.RELAY_SDP, offer)
 
-          // ожидания ответа
-          socket.on(ACTIONS.RELAY_SDP, async answer => {
-            this.currentState = 'answerGetting'
-            // установки ответа
-            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
+        // ожидания ответа
+        socket.on(ACTIONS.RELAY_SDP, async answer => {
+          this.currentState = 'answerGetting'
+          // установки ответа
+          await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
 
-            socket.on(ACTIONS.RELAY_ICE, async ice => {
-              this.currentState = 'iceGetting'
-              await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
-            })
+          socket.on(ACTIONS.RELAY_ICE, async ice => {
+            this.currentState = 'iceGetting'
+            await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
           })
-        } else {
-          this.onDataChannel()
-          // ожидания оффера
-          console.log("ожидания оффера");
-          
-          this.currentState = 'waitingForOffer'
-          socket.on(ACTIONS.RELAY_SDP, async offer => {
-            this.currentState = 'offerGetting'
+        })
+      } else {
+        this.onDataChannel()
+        // ожидания оффера
+        this.currentState = 'waitingForOffer'
+        socket.on(ACTIONS.RELAY_SDP, async offer => {
+          this.currentState = 'offerGetting'
 
-            // установки оффера
-            this.currentState = 'offerSetting'
-            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+          // установки оффера
+          this.currentState = 'offerSetting'
+          await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
 
-            // создания ответа
-            this.currentState = 'answerCreating'
-            const answer = await this.peerConnection.createAnswer()
-            this.peerConnection.setLocalDescription(answer)
+          // создания ответа
+          this.currentState = 'answerCreating'
+          const answer = await this.peerConnection.createAnswer()
+          this.peerConnection.setLocalDescription(answer)
 
-            // отправка ответа
-            this.currentState = 'answerSending'
-            socket.emit(ACTIONS.RELAY_SDP, answer)
+          // отправка ответа
+          this.currentState = 'answerSending'
+          socket.emit(ACTIONS.RELAY_SDP, answer)
 
-            socket.on(ACTIONS.RELAY_ICE, async ice => {
-              this.currentState = 'iceGetting'
-              await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
-            })
+          socket.on(ACTIONS.RELAY_ICE, async ice => {
+            this.currentState = 'iceGetting'
+            await this.peerConnection.addIceCandidate(new RTCIceCandidate(ice))
           })
-        }
-
-        setTimeout(() => {
-          if (!this.isConnected) {
-            this.currentState = "reconnecting"
-            this.close()
-            this.start()
-          }
-        }, 5000);
+        })
       }
+
+      // попытка переустановить связь
+      setTimeout(() => !this.isConnected && this.reconnect(), 5000);
     },
 
     close() {
@@ -155,13 +130,19 @@ export default {
       }
     },
 
+    reconnect() {
+      this.currentState = "reconnecting"
+      this.close()
+      this.start()
+    },
+
     initConnection() {
       this.currentState = 'init'
       this.peerConnection = new RTCPeerConnection({ iceServers: freeice() })
-      this.onIceCandidate()
+      this.setOnIceCandidate()
     },
 
-    onIceCandidate() {
+    setOnIceCandidate() {
       let candidate = null
       this.peerConnection.onicecandidate = (e) => {
         if (e.candidate && !candidate) {
@@ -187,21 +168,62 @@ export default {
 
     initChannelEvents() {
       this.dataChannel.onopen = () => this.onOpen()
-      this.dataChannel.onmessage = e => this.onReceiveMessage(e)
+      this.dataChannel.onmessage = e => this.onReceiveData(e)
     },
 
     onOpen() {
       this.currentState = 'onopen'
-      this.dataChannel.send("Беседа началась!")
+      this.send(this.createMessage("Беседа началась!"))
     },
 
-    onReceiveMessage(e) {
-      this.messages.push({ text: e.data, time: Date.now(), myself: false})
+    onReceiveData(e) {
+      const data = JSON.parse(e.data)
+      switch (data.type) {
+        case 'message':
+          this.addMessage(data)
+          this.send({ type: "set-sent", id: data.id })
+          break;
+
+        case 'set-sent':
+          this.setCompanionReceived(data.id)
+          break;
+      }
     },
 
-    onSendMessage(message) {
-      this.dataChannel.send(message)
-      this.messages.push({ text: message, time: Date.now(), myself: true})
+    setCompanionReceived(id) {
+      const message = this.messages.find(msg => msg.id == id)
+      if (message) {
+        message.sent = true
+      }
+    },
+
+    onSendMessage(text) {
+      const message = this.createMessage(text)
+      this.send(message)
+      this.addMessage({ ...message, myself: true})
+    },
+
+    send(data) {
+      this.dataChannel.send(JSON.stringify(data))
+    },
+
+    addMessage(message){
+      this.messages.push({ ...message, time: Date.now() })
+    },
+
+    createMessage(text) {
+      return {
+        text,
+        id: this.getMessageId(),
+        type: "message",
+        time: Date.now(),
+        sent: false,
+      }
+    },
+
+    getMessageId() {
+      // return randomize key like: a0f23c914d0e00
+      return (Date.now() + +String(Math.random()).split(".").pop()).toString(16)
     },
   },
 

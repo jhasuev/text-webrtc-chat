@@ -1,0 +1,16 @@
+{
+  "init": "Инициализируем соединение",
+  "offerCreating": "Создание оффера",
+  "offerSending": "Отправка оффера",
+  "answerGetting": "Получение ответа",
+  "iceGetting": "Получение ice кандидата",
+  "waitingForOffer": "Ожидания оффера",
+  "offerGetting": "Получение оффера",
+  "offerSetting": "Установка оффера",
+  "answerCreating": "Создание ответа",
+  "answerSending": "Отправка ответа",
+  "channelCreating": "Создание канала связи",
+  "ondatachannel": "Установка канала связи",
+  "reconnecting": "Еще одна попытка...",
+  "onopen": "Связь установлена"
+}

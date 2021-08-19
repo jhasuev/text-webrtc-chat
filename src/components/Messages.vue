@@ -6,6 +6,7 @@
       class="messages__item"
       :text=message.text
       :myself=message.myself
+      :sent=message.sent
       :time=message.time
     />
   </div>
