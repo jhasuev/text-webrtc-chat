@@ -1,9 +1,12 @@
-const server = require("http").createServer()
-const io = require("socket.io")(server)
+const PORT = process.env.PORT || 3001
+const express = require("express")
+const socket = require("socket.io")
 const ACTIONS = require("./src/socket/actions")
 const Talkers = require("./classes/Talkers")
 
-const PORT = process.env.PORT || 3001
+const app = express()
+const io = socket(app.listen(PORT))
+app.use(express.static(__dirname + "/dist"))
 
 io.on("connection", socket => {
   // поиск собеседника
@@ -69,8 +72,4 @@ io.on("connection", socket => {
     const total = Talkers.getTalkers().reduce((acc, talkers) => acc + talkers.length, 0)
     socket.emit(ACTIONS.RELAY_TOTAL, total)
   })
-})
-
-server.listen(PORT, () => {
-  console.log(`Server was started on ${PORT} port...`);
 })
