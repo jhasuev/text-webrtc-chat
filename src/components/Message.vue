@@ -52,6 +52,7 @@ export default {
     display: inline-block;
     line-height: 1;
     padding-right: 10px;
+    white-space: pre-line;
   }
   &__time {
     font-size: 10px;
