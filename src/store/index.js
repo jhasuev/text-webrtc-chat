@@ -4,17 +4,17 @@ const store = createStore({
   state: {
     selfInfo: {
       socket: "",
-      mustCreateOffer: false,
+      makeOffer: false,
     },
   },
   getters: {
     getSocket: state => state.selfInfo.socket,
-    mustCreateOffer: state => state.selfInfo.mustCreateOffer,
+    makeOffer: state => state.selfInfo.makeOffer,
   },
   mutations: {
     SET_SELF_INFO(state, payload) {
       state.selfInfo.socket = payload.socket
-      state.selfInfo.mustCreateOffer = payload.mustCreateOffer
+      state.selfInfo.makeOffer = payload.makeOffer
     },
   },
   actions: {

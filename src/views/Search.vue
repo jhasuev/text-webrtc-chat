@@ -25,7 +25,7 @@ export default {
     socket.emit(ACTIONS.START_SEARCHING)
 
     socket.on(ACTIONS.START_DISCUSSION, data => {
-      // тут будет хранится данные о текущем пользователя (не собеседник) { socket, mustCreateOffer }
+      // тут будет хранится данные о текущем пользователя (не собеседник) { socket, makeOffer }
       this.setSelfInfo(data)
 
       this.$router.push({ name: "chat" })

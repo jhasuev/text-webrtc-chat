@@ -15,12 +15,12 @@ class Talkers {
     const hasInAlready = this.talkers[freeCompanionIndex].find(talker => talker.socket === newSocketId)
     if (hasInAlready) return null
 
-    this.talkers[freeCompanionIndex].push({ socket: newSocketId, mustCreateOffer: false })
+    this.talkers[freeCompanionIndex].push({ socket: newSocketId, makeOffer: false })
     return this.talkers[freeCompanionIndex]
   }
 
   addWaiter(socket) {
-    return this.talkers.push([{ socket, mustCreateOffer: true }])
+    return this.talkers.push([{ socket, makeOffer: true }])
   }
 
   removeWaiter(socket) {
