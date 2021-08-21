@@ -8,6 +8,7 @@
 
     <messages
       class="chat__messages"
+      ref=messages
       :messages=messages
     />
 
@@ -201,6 +202,10 @@ export default {
 
     addMessage(message){
       this.messages.push({ ...message, time: Date.now() })
+
+      if(this.$refs.messages) {
+        this.$refs.messages.scrollToBottom()
+      }
     },
 
     createMessage(text) {
