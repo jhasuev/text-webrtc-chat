@@ -11,7 +11,7 @@
     <messages
       class="chat__messages"
       ref=messages
-      :messages=messages
+      :messages=getCurrentMessages
     />
 
     <chat-footer
@@ -29,7 +29,7 @@ import socket from "@/socket/"
 import ACTIONS from "@/socket/actions"
 import WebRTC from "@/WebRTC"
 
-import { mapGetters } from "vuex";
+import { mapGetters, mapActions } from "vuex"
 
 export default {
   name: "Chat",
@@ -41,12 +41,11 @@ export default {
     return {
       socket,
       ACTIONS,
-      messages: [],
       connected: false,
     }
   },
   computed: {
-    ...mapGetters([ 'getSocket', 'makeOffer' ]),
+    ...mapGetters([ 'getSocket', 'makeOffer', 'getCurrentMessages' ]),
   },
   mounted() {
     if (!this.getSocket) return this.$router.push({ name: "home" })
@@ -55,9 +54,20 @@ export default {
       this.$router.push({ name: "home", query: { state: 'companion-disconnected' } })
     })
 
-    this.startWebRTC()
+    this.start()
   },
   methods: {
+    ...mapActions([
+      'startChatting',
+      'pushMessage',
+      'setCompanionReceived',
+    ]),
+
+    start() {
+      this.startChatting()
+      this.startWebRTC()
+    },
+
     startWebRTC() {
       this.WebRTC = new WebRTC({
         makeOffer: this.makeOffer,
@@ -70,14 +80,6 @@ export default {
       console.log("Chat.vue >> onopen");
       this.connected = true
       this.send(this.createMessage("Беседа началась!"))
-    },
-    
-    addMessage(message){
-      this.messages.push({ ...message, time: Date.now() })
-
-      if(this.$refs.messages) {
-        this.$refs.messages.scrollToBottom()
-      }
     },
 
     onmessage(data) {
@@ -92,13 +94,6 @@ export default {
           break;
       }
     },
-    
-    setCompanionReceived(id) {
-      const message = this.messages.find(msg => msg.id == id)
-      if (message) {
-        message.sent = true
-      }
-    },
 
     onSendMessage(text) {
       const message = this.createMessage(text)
@@ -108,6 +103,14 @@ export default {
 
     send(data) {
       this.WebRTC.send(data)
+    },
+    
+    addMessage(message){
+      this.pushMessage({ ...message, time: Date.now() })
+
+      if(this.$refs.messages) {
+        this.$refs.messages.scrollToBottom()
+      }
     },
 
     createMessage(text) {
