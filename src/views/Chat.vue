@@ -10,7 +10,6 @@
 
     <messages
       class="chat__messages"
-      ref=messages
       :messages=getCurrentMessages
     />
 
@@ -108,10 +107,6 @@ export default {
     
     addMessage(message){
       this.pushMessage( message )
-
-      if(this.$refs.messages) {
-        this.$refs.messages.scrollToBottom()
-      }
     },
 
     close() {

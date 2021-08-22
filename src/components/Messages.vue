@@ -25,8 +25,16 @@ export default {
   props: {
     messages: { type: Array, default: () => [] },
   },
+  watch: {
+    messages: {
+      deep: true,
+      handler(){
+        this.scrollDown()
+      },
+    },
+  },
   methods: {
-    async scrollToBottom() {
+    async scrollDown() {
       const block = this.$refs.messages
       if(block && block.scrollTop >= block.scrollHeight - block.clientHeight) {
         await this.$nextTick()
