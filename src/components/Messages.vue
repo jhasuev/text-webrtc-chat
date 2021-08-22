@@ -1,5 +1,8 @@
 <template>
-  <div class="messages">
+  <div
+    ref=messages
+    class="messages"
+  >
     <message
       v-for="message, i in messages"
       :key="i"
@@ -21,6 +24,23 @@ export default {
   },
   props: {
     messages: { type: Array, default: () => [] },
+  },
+  watch: {
+    messages: {
+      deep: true,
+      handler(){
+        this.scrollDown()
+      },
+    },
+  },
+  methods: {
+    async scrollDown() {
+      const block = this.$refs.messages
+      if(block && block.scrollTop >= block.scrollHeight - block.clientHeight) {
+        await this.$nextTick()
+        block.scrollTop = block.scrollHeight - block.clientHeight
+      }
+    },
   },
 }
 </script>

@@ -2,7 +2,7 @@
   <div class="chat-footer">
     <div class="chat-footer__message">
       <textarea
-        class="form-control"
+        class="form-control  chat-footer__textarea"
         placeholder="Ваше сообщение..."
 
         @keydown.enter.ctrl=send
@@ -41,6 +41,10 @@ export default {
 .chat-footer {
   padding-top: 15px;
   display: flex;
+
+  &__textarea {
+    resize: none;
+  }
 
   &__message {
     flex-grow: 1;
