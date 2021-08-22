@@ -46,7 +46,7 @@ const store = createStore({
     },
 
     pushMessage({ commit }, message) {
-      commit("PUSH_MESSAGE", message)
+      commit("PUSH_MESSAGE", { ...message, time: Date.now() })
     },
 
     setCompanionReceived({ commit }, id) {

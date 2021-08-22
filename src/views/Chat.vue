@@ -29,6 +29,7 @@ import socket from "@/socket/"
 import ACTIONS from "@/socket/actions"
 import WebRTC from "@/WebRTC"
 
+import { createMessage } from "@/helpers"
 import { mapGetters, mapActions } from "vuex"
 
 export default {
@@ -79,7 +80,7 @@ export default {
     onopen() {
       console.log("Chat.vue >> onopen");
       this.connected = true
-      this.send(this.createMessage("Беседа началась!"))
+      this.send(createMessage("Беседа началась!"))
     },
 
     onmessage(data) {
@@ -96,7 +97,7 @@ export default {
     },
 
     onSendMessage(text) {
-      const message = this.createMessage(text)
+      const message = createMessage(text)
       this.send(message)
       this.addMessage({ ...message, myself: true})
     },
@@ -106,37 +107,26 @@ export default {
     },
     
     addMessage(message){
-      this.pushMessage({ ...message, time: Date.now() })
+      this.pushMessage( message )
 
       if(this.$refs.messages) {
         this.$refs.messages.scrollToBottom()
       }
     },
 
-    createMessage(text) {
-      return {
-        text,
-        id: this.getMessageId(),
-        type: "message",
-        time: Date.now(),
-        sent: false,
-      }
-    },
-
-    // return randomize key like: a0f23c914d0e00
-    getMessageId() {
-      return (Date.now() + +String(Math.random()).split(".").pop()).toString(16)
+    close() {
+      if(this.WebRTC) this.WebRTC.close()
     },
 
     leave() {
       socket.emit(ACTIONS.STOP_DISCUSSION)
-      this.WebRTC.close()
+      this.close()
       this.$router.push({ name: "home" })
     },
   },
 
   beforeUnmount() {
-    if(this.WebRTC) this.WebRTC.close()
+    this.close()
   },
 }
 </script>
