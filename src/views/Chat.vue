@@ -48,6 +48,8 @@ export default {
     ...mapGetters([ 'getSocket', 'makeOffer', 'getCurrentMessages' ]),
   },
   mounted() {
+    this.setTitle("Установка соединение")
+
     if (!this.getSocket) return this.$router.push({ name: "home" })
 
     socket.on(ACTIONS.STOP_DISCUSSION, () => {
@@ -77,6 +79,7 @@ export default {
     },
 
     onopen() {
+      this.setTitle("Общение с собеседником")
       console.log("Chat.vue >> onopen");
       this.connected = true
       this.send(createMessage("Беседа началась!"))
@@ -85,7 +88,10 @@ export default {
     onmessage(data) {
       switch (data.type) {
         case 'message':
+          // добавляем сообщение
           this.addMessage(data)
+
+          // отправляем отчет о том, что сообщение доставлено
           this.send({ type: "set-sent", id: data.id })
           break;
 
@@ -115,7 +121,6 @@ export default {
 
     leave() {
       socket.emit(ACTIONS.STOP_DISCUSSION)
-      this.close()
       this.$router.push({ name: "home" })
     },
   },

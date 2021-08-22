@@ -22,6 +22,8 @@ export default {
     }
   },
   mounted() {
+    this.setTitle("Поиск собеседника")
+
     socket.emit(ACTIONS.START_SEARCHING)
 
     socket.on(ACTIONS.START_DISCUSSION, data => {

@@ -9,5 +9,8 @@
 <script>
 export default {
   name: "NotFound404",
+  mounted() {
+    this.setTitle("404")
+  },
 }
 </script>

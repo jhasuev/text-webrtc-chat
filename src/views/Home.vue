@@ -28,6 +28,8 @@ export default {
     },
   },
   mounted(){
+    this.setTitle("Главная")
+
     socket.on(ACTIONS.RELAY_TOTAL, total => {
       this.total = total
     })
